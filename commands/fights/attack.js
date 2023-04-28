@@ -49,33 +49,259 @@ module.exports = {
       }
       //get game
       const activeGame = games[gameID];
+
       //getRound Function
       const getRound = async (gamedetails) => {
-        let res = await axios.post(
+        const response = await axios.post(
           "https://aetherarbiter.bowojori7.repl.co/round",
-          gamedetails
+          gamedetails,
+          { responseType: 'stream' } // Set responseType to 'stream'
         );
-        console.log(res.data);
-        interaction.followUp(res.data.message);
-        interaction.followUp("You may continue the battle");
-        activeGame["player1"].hp = res.data["hp"]["1"];
-        activeGame["player2"].hp = res.data["hp"]["2"];
-        ///check if any players hp has reached 0 then call finale
-        if (activeGame["player1"].hp === 0 || activeGame["player2"].hp === 0) {
-          let finaleDetails = JSON.parse(JSON.stringify(gamedetails));
-          finaleDetails.Acolytes[0].HP = activeGame["player1"].hp;
-          finaleDetails.Acolytes[1].HP = activeGame["player2"].hp;
-          console.log(finaleDetails);
-          let res = await axios.post(
-            "https://aetherarbiter.bowojori7.repl.co/finale",
-            finaleDetails
-          );
-          console.log(res.data);
-          interaction.followUp(res.data);
-        } else {
-          console.log(res.data);
-        }
+
+        let messageBuffer = ''; // Buffer to accumulate chunks
+        let fullMessageContent = ''; // Full message content
+        let channelDeleted = false;
+
+        // Send an initial reply to create a message that can be edited
+        // await interaction.deferReply();
+        const message = await interaction.followUp("Consulting the Arbiter...");
+
+        // Function to update the message with buffered content
+        const updateMessage = async () => {
+          if (messageBuffer) {
+            // fullMessageContent = messageBuffer;
+            // await message.edit(fullMessageContent);
+            // Use the same regular expression to extract the content inside the "message" property
+            const messageRegex = /"message": "(.*)/;
+            const match = messageBuffer.match(messageRegex);
+            if (match && match[1]) {
+              fullMessageContent = match[1];
+              fullMessageRegex = /"message":\s*"([^"]*)"/;
+              const fullMatch = messageBuffer.match(fullMessageRegex);
+              if (fullMatch && fullMatch[1]) { 
+                fullMessageContent = fullMatch[1];
+                if (!channelDeleted) {
+                  try {
+                    await message.edit(fullMessageContent);
+                  } catch (error) {
+                    console.error('Caught the channel deleting error :))');
+                  }
+                }
+              } else{
+                if (!channelDeleted) {
+                  try {
+                    await message.edit(fullMessageContent);
+                  } catch (error) {
+                    console.error('Caught the channel deleting error :))');
+                  }
+                }
+              }
+            }
+          }
+          // Schedule the next update after a delay (e.g., 2000 ms)
+          setTimeout(updateMessage, 500);
+        };
+      
+        // Start the update loop
+        updateMessage();
+      
+        // Listen to the 'data' event on the response stream
+        response.data.on('data', (chunk) => {
+          // Convert the chunk to a string and accumulate it in the buffer
+          messageBuffer += chunk.toString();
+        });
+
+
+        // Listen to the 'end' event to handle the end of the stream
+        response.data.on('end', async () => {
+          // If there is any remaining content in the buffer, send it to the channel
+          if (messageBuffer) {
+            const messageRegex = /"message":\s*"([^"]*)"/;
+            const match = messageBuffer.match(messageRegex);
+            if (match && match[1]) {
+              fullMessageContent = match[1];
+              if (!channelDeleted) {
+                try {
+                  await message.edit(fullMessageContent);
+                } catch (error) {
+                  console.error('Caught the channel deleting error :))');
+                }
+              }
+            }
+          }
+          console.log("Full message content on end: " + fullMessageContent)
+
+          let jsonRound;
+          try {
+            jsonRound = JSON.parse(messageBuffer);
+            activeGame["player1"].hp = jsonRound.hp["1"];
+            activeGame["player2"].hp = jsonRound.hp["2"];
+            
+            if (activeGame["player1"].hp > 0 || activeGame["player2"].hp > 0) {
+              interaction.followUp("You may continue the battle");
+            }
+          } catch (error) {
+            console.error('Error while parsing JSON:', error);
+            return;
+          }
+
+          
+
+
+          // Endgame Sequence
+          // check if any players hp has reached 0 then call finale
+          if (activeGame["player1"].hp === 0 || activeGame["player2"].hp === 0) {
+            let finaleDetails = JSON.parse(JSON.stringify(gamedetails));
+            finaleDetails.Acolytes[0].HP = activeGame["player1"].hp;
+            finaleDetails.Acolytes[1].HP = activeGame["player2"].hp;
+            console.log("Finale Details: "+finaleDetails);
+            const res = await axios.post(
+              "https://aetherarbiter.bowojori7.repl.co/finale",
+              finaleDetails,
+              { responseType: 'stream' } // Set responseType to 'stream'
+            );
+
+            let messageBuffer = ''; // Buffer to accumulate chunks
+            let fullMessageContent = ''; // Full message content
+    
+            // Send an initial reply to create a message that can be edited
+            // await interaction.deferReply();
+            const message = await interaction.followUp("Announcing Battle Finale!");
+    
+            // Function to update the message with buffered content
+            const updateMessage = async () => {
+              if (messageBuffer) {
+                // fullMessageContent = messageBuffer;
+                // await message.edit(fullMessageContent);
+                // Use the same regular expression to extract the content inside the "message" property
+                const messageRegex = /"message": "(.*)/;
+                const match = messageBuffer.match(messageRegex);
+                if (match && match[1]) {
+                  fullMessageContent = match[1];
+                  fullMessageRegex = /"message":\s*"([^"]*)"/;
+                  const fullMatch = messageBuffer.match(fullMessageRegex);
+                  if (fullMatch && fullMatch[1]) { 
+                    fullMessageContent = fullMatch[1];
+                    if (!channelDeleted) {
+                      try {
+                        await message.edit(fullMessageContent);
+                      } catch (error) {
+                        console.error('Caught the channel deleting error :))');
+                      }
+                    }
+                  } else{
+                    if (!channelDeleted) {
+                      try {
+                        await message.edit(fullMessageContent);
+                      } catch (error) {
+                        console.error('Caught the channel deleting error :))');
+                      }
+                    }
+                  }
+                }
+              }
+              // Schedule the next update after a delay (e.g., 2000 ms)
+              setTimeout(updateMessage, 500);
+            };
+          
+            // Start the update loop
+            updateMessage();
+          
+            // Listen to the 'data' event on the response stream
+            res.data.on('data', (chunk) => {
+              // Convert the chunk to a string and accumulate it in the buffer
+              messageBuffer += chunk.toString();
+            });
+    
+    
+            // Listen to the 'end' event to handle the end of the stream
+            res.data.on('end', async () => {
+              // If there is any remaining content in the buffer, send it to the channel
+              if (messageBuffer) {
+                const messageRegex = /"message":\s*"([^"]*)"/;
+                const match = messageBuffer.match(messageRegex);
+                if (match && match[1]) {
+                  fullMessageContent = match[1];
+                  if (!channelDeleted) {
+                    try {
+                      await message.edit(fullMessageContent);
+                    } catch (error) {
+                      console.error('Caught the channel deleting error :))');
+                    }
+                  }
+                }
+              }
+              console.log("Full message content on end: " + fullMessageContent)
+
+              // The endgame sequence after sending the final message from the Arbiter
+              // do an interaction followup that contains:
+              // XP gains - Call the scribe, update acolytes XP
+              // Send an interaction followup saying the XP gains
+              await interaction.followUp(`${activeGame["player1"].name} has gained 1 XP and ${activeGame["player2"].name} has gained 1 XP`);
+              
+              // Call share Image 
+              // Send the response of this to interaction.followup (Image URL) 
+
+              function sleep(milliseconds) {
+                return new Promise((resolve) => setTimeout(resolve, milliseconds));
+              }
+  
+              // Delete the channel
+              try{
+                await sleep(5000);
+                await interaction.channel.delete();
+                channelDeleted = true;
+              } catch (error) {
+                console.error('Caught the channel deleting error :))');
+              }
+            });
+
+            res.data.on('error', (error) => {
+              console.error('Error while streaming:', error);
+            });
+
+          }
+        });
+
+        // Listen to the 'error' event to handle any errors that occur during streaming
+        response.data.on('error', (error) => {
+          console.error('Error while streaming:', error);
+        });
       };
+
+
+      // uncomment if you want slow arbiter version      
+      // const getRound = async (gamedetails) => {
+      //   let res = await axios.post(
+      //     "https://aetherarbiter.bowojori7.repl.co/round",
+      //     gamedetails
+      //   );
+      //   console.log(res.data);
+      //   interaction.followUp(res.data.message);
+      //   activeGame["player1"].hp = res.data["hp"]["1"];
+      //   activeGame["player2"].hp = res.data["hp"]["2"];
+      //   if (activeGame["player1"].hp > 0 || activeGame["player2"].hp > 0) {
+      //     interaction.followUp("You may continue the battle");
+      //   }
+
+      //   ///check if any players hp has reached 0 then call finale
+      //   if (activeGame["player1"].hp === 0 || activeGame["player2"].hp === 0) {
+      //     let finaleDetails = JSON.parse(JSON.stringify(gamedetails));
+      //     finaleDetails.Acolytes[0].HP = activeGame["player1"].hp;
+      //     finaleDetails.Acolytes[1].HP = activeGame["player2"].hp;
+      //     console.log(finaleDetails);
+      //     let res = await axios.post(
+      //       "https://aetherarbiter.bowojori7.repl.co/finale",
+      //       finaleDetails
+      //     );
+      //     console.log(res.data);
+      //     interaction.followUp(res.data);
+      //   } else {
+      //     console.log(res.data);
+      //   }
+      // };
+
+
       //get game current round
       const currentRound = getGameRound(gameID);
 
@@ -141,9 +367,14 @@ module.exports = {
 
           console.log("Both players have made non-empty actions in this round");
           await interaction.reply({
-            content: `<${userName}>'s move : ${usermove}\nThe Arbiter will judge the moves now`,
+            content: `${userName}'s move : ${usermove}\nThe Arbiter will judge the moves now`,
           });
-          getRound(gameDetails);
+          try{
+            getRound(gameDetails);
+          } catch(error) {
+          console.error("Caught the channel deleting error :))");
+          }
+          
 
           activeGame.player1.Actions.push({
             Round: activeGame.round + 1,
@@ -156,10 +387,10 @@ module.exports = {
           setGameRound(gameID, "round", activeGame.round + 1);
         } else {
           console.log(
-            "One or both players have not made non-empty actions in this round"
+            "One player has made a non-empty action in this round"
           );
           await interaction.reply({
-            content: `<${userName}>'s move : ${usermove}`,
+            content: `${userName}'s move : ${usermove}`,
           });
         }
       } else {
