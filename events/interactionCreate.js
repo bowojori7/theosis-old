@@ -232,7 +232,7 @@ async function handleArenaCreation(interaction, activeGame, gameDetails) {
     //   content: `An exciting battle is happening now, Join and view at ${invite}`,
     // });
     await interaction.reply({
-      content: `The Ecclesia applauds the mighty valor of ${activeGame["player1"].name} and ${activeGame["player2"].name}`,
+      content: `The Ecclesia commends the mighty valor of ${activeGame["player1"].name} and ${activeGame["player2"].name}`,
       components: [new ActionRowBuilder().addComponents(button)]
     });
 
