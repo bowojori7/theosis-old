@@ -233,7 +233,7 @@ module.exports = {
               }
               console.log("Full message content on end: " + fullMessageContent)
 
-              // The endgame sequence after sending the final message from the Arbiter
+              // The endgame after sending the final message from the Arbiter
               // do an interaction followup that contains:
               // XP gains - Call the scribe, update acolytes XP
               // Send an interaction followup saying the XP gains
@@ -268,39 +268,6 @@ module.exports = {
           console.error('Error while streaming:', error);
         });
       };
-
-
-      // uncomment if you want slow arbiter version      
-      // const getRound = async (gamedetails) => {
-      //   let res = await axios.post(
-      //     "https://aetherarbiter.bowojori7.repl.co/round",
-      //     gamedetails
-      //   );
-      //   console.log(res.data);
-      //   interaction.followUp(res.data.message);
-      //   activeGame["player1"].hp = res.data["hp"]["1"];
-      //   activeGame["player2"].hp = res.data["hp"]["2"];
-      //   if (activeGame["player1"].hp > 0 || activeGame["player2"].hp > 0) {
-      //     interaction.followUp("You may continue the battle");
-      //   }
-
-      //   ///check if any players hp has reached 0 then call finale
-      //   if (activeGame["player1"].hp === 0 || activeGame["player2"].hp === 0) {
-      //     let finaleDetails = JSON.parse(JSON.stringify(gamedetails));
-      //     finaleDetails.Acolytes[0].HP = activeGame["player1"].hp;
-      //     finaleDetails.Acolytes[1].HP = activeGame["player2"].hp;
-      //     console.log(finaleDetails);
-      //     let res = await axios.post(
-      //       "https://aetherarbiter.bowojori7.repl.co/finale",
-      //       finaleDetails
-      //     );
-      //     console.log(res.data);
-      //     interaction.followUp(res.data);
-      //   } else {
-      //     console.log(res.data);
-      //   }
-      // };
-
 
       //get game current round
       const currentRound = getGameRound(gameID);
