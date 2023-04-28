@@ -21,16 +21,54 @@ module.exports = {
     .setDescription("Make your moves, go for the win.")
     .addStringOption((option) =>
       option
-        .setName("move")
-        .setDescription("Your well-thought out move")
+        .setName("i")
+        .setDescription("Start by saying hi 😈")
         .setRequired(true)
+        .addChoices(
+				{ name: 'I', value: 'I' }
+			)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("verb")
+        .setDescription("Use, activate, manipulate, create, etc.")
+        .setRequired(true)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("power")
+        .setDescription("The specific power being utilized, such as pyrokinesis, telekinesis, etc.")
+        .setRequired(true)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("to")
+        .setDescription("Just a filler")
+        .setRequired(true)
+        .addChoices(
+				{ name: 'to', value: 'to' }
+			)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("intendedaction")
+        .setDescription("The action you want to perform with your power, such as create a fireball, levitate an object, etc.")
+        .setRequired(true)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("target")
+        .setDescription("What's the target of your intended action? your opponent? the arena? the universe?")
+        .setRequired(false)
     ),
   async execute(interaction) {
     const userName = interaction.user.username;
     const userId = interaction.user.id;
     const compid = interaction.id;
     const readyAcolytes = getAcolytes();
-    const usermove = interaction.options.getString("move");
+    const usermove = 
+      interaction.options.getString("i") + " " +       interaction.options.getString("verb") + " " + interaction.options.getString("power") + " " + interaction.options.getString("to") + " " + interaction.options.getString("intendedaction") + " " +
+interaction.options.getString("target");
     let gameID;
     const games = getAllGames();
 
